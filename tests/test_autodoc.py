@@ -890,6 +890,9 @@ class Class(Base):
         pass
 
 
+setattr(Class, 'dotted.attr.name', 'value')
+
+
 class CustomDict(dict):
     """Docstring."""
 
