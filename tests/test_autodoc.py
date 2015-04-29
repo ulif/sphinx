@@ -18,7 +18,8 @@ from six import StringIO
 from docutils.statemachine import ViewList
 
 from sphinx.ext.autodoc import AutoDirective, add_documenter, \
-    ModuleLevelDocumenter, FunctionDocumenter, cut_lines, between, ALL
+    ModuleLevelDocumenter, FunctionDocumenter, cut_lines, between,  \
+    partition_name, ALL
 
 app = None
 
@@ -100,6 +101,15 @@ def skip_member(app, what, name, obj, skip, options):
         return True
     if name == 'skipmeth':
         return True
+
+
+def test_partition_name():
+    # make sure partitions are built correctly
+    assert list(partition_name([])) == []
+    assert list(partition_name(['a'])) == [('a', )]
+    assert list(partition_name(['a', 'b'])) == [('a', 'b'), ('a.b',)]
+    assert list(partition_name(['a', 'b', 'c'])) == [
+        ('a', 'b', 'c'), ('a.b', 'c'), ('a', 'b.c'), ('a.b.c',)]
 
 
 @with_setup(setup_test)
@@ -640,6 +650,7 @@ def test_generate():
     assert_processes(should, 'class', 'Class')
     options.undoc_members = True
     should.extend((('attribute', 'test_autodoc.Class.skipattr'),
+                   ('attribute', 'test_autodoc.Class.dotted.attr.name'),
                    ('method', 'test_autodoc.Class.undocmeth'),
                    ('method', 'test_autodoc.Class.roger')))
     assert_processes(should, 'class', 'Class')
