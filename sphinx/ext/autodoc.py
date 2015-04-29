@@ -45,6 +45,21 @@ py_ext_sig_re = re.compile(
           ''', re.VERBOSE)
 
 
+def partition_name(parts_list):
+    """Partition parts of dotted name.
+    """
+    if parts_list == []:
+        raise StopIteration()
+    for num in range(2 ** (len(parts_list) - 1)):
+        result = [parts_list[0], ]
+        for subnum, part in enumerate(parts_list[1:]):
+            if (2 ** subnum) & num:
+                result[-1] = '.'.join([result[-1], part])
+            else:
+                result.append(part)
+        yield tuple(result)
+
+
 class DefDict(dict):
     """A dict that returns a default on nonexisting keys."""
     def __init__(self, default):
@@ -367,6 +382,25 @@ class Documenter(object):
                         (self.objpath and '.' + '.'.join(self.objpath) or '')
         return True
 
+    def import_object_from_dotted_path(self):
+        dbg = self.env.app.debug
+        for path in partition_name(self.objpath):
+            obj = self.module = sys.modules[self.modname]
+            try:
+                for part in path:
+                    parent = obj
+                    dbg('[autodoc] getattr(_, %r)', part)
+                    obj = self.get_attr(obj, part)
+                    dbg('[autodoc] => %r', obj)
+                    self.object_name = part
+                self.parent = parent
+                self.object = obj
+                return True
+            except (Exception, SystemExit) as e:
+                exc = e
+                pass
+        return False
+
     def import_object(self):
         """Import the object given by *self.modname* and *self.objpath* and set
         it as *self.object*.
@@ -399,6 +433,8 @@ class Documenter(object):
         # but importing modules with side effects can raise all kinds of errors
         except (Exception, SystemExit) as e:
             if self.objpath:
+                if self.import_object_from_dotted_path() is True:
+                    return True
                 errmsg = 'autodoc: failed to import %s %r from module %r' % \
                          (self.objtype, '.'.join(self.objpath), self.modname)
             else:
