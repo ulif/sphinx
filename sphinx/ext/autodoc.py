@@ -389,13 +389,7 @@ class Documenter(object):
             for part in self.objpath:
                 parent = obj
                 dbg('[autodoc] getattr(_, %r)', part)
-                try:
-                    obj = self.get_attr(obj, part)
-                except AttributeError:
-                    part = '.'.join(self.objpath[1:])
-                    obj = self.get_attr(obj, part)
-                    self.object_name = part
-                    break
+                obj = self.get_attr(obj, part)
                 dbg('[autodoc] => %r', obj)
                 self.object_name = part
             self.parent = parent
